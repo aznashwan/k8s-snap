@@ -60,7 +60,7 @@ func ensureCniBinDir(cniBinDir string) error {
 			}
 
 			if err := syscall.Stat(cniBinDir, &stat); err != nil {
-				return fmt.Errorf("failed to syscall.Stat(%q): %w", cniBinDir, err)
+				return fmt.Errorf("failed to syscall.Stat(%q) newly-created CNI bin dir: %w", cniBinDir, err)
 			}
 		}
 		return fmt.Errorf("failed to syscall.Stat(%q): %w", cniBinDir, err)
