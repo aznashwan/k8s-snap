@@ -68,7 +68,7 @@ func ensureCniBinDir(cniBinDir string) error {
 	}
 
 	if stat.Uid != 0 || stat.Gid != 0 {
-		l.Info("Ensuring ownership of cni bin directory")
+		l.WithValues("from", fmt.Sprintf("%d:%d", stat.Uid, stat.Gid)).Info("Ensuring ownership of cni bin directory")
 		if err := os.Chown(cniBinDir, 0, 0); err != nil {
 			return fmt.Errorf("failed to os.Chown(%q, 0, 0): %w", cniBinDir, err)
 		}
