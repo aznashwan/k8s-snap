@@ -172,7 +172,14 @@ def test_skip_services_stop_on_remove(instances: List[harness.Instance]):
                 " inactive " in service
             ), "apiserver proxy should be inactive on control-plane"
         else:
-            assert " active " in service, "service should be active"
+            if " active " not in service:
+                service_name = service.split(" ")[0]
+                service_logs= joining_cp.exec(
+                    ["snap", "logs", service_name], capture_output=True, text=True
+                ).stdout.split("\n")
+                LOG.info(f"Logs for service {service_name}: {service_logs}")
+                raise AssertionError(
+                    f"Serivice '{service_name}' should be 'active': '{service}'")
 
     cluster_node.exec(["k8s", "remove-node", worker.id])
     nodes = util.ready_nodes(cluster_node)
