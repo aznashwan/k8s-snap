@@ -6,6 +6,7 @@ import logging
 import os
 import subprocess
 import tempfile
+import time
 from typing import List
 
 import pytest
@@ -162,6 +163,7 @@ def test_skip_services_stop_on_remove(instances: List[harness.Instance]):
     )
     nodes = util.ready_nodes(cluster_node)
     assert len(nodes) == 2, "cp node should have been removed from the cluster"
+    time.sleep(60)
     services = joining_cp.exec(
         ["snap", "services", "k8s"], capture_output=True, text=True
     ).stdout.split("\n")[1:-1]
