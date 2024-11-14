@@ -93,6 +93,17 @@ jobs:
           sg lxd -c 'lxc version'
           sudo iptables -I DOCKER-USER -i lxdbr0 -j ACCEPT
           sudo iptables -I DOCKER-USER -o lxdbr0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+
+          # TODO(aznashwan): remove check
+          sudo ls -l /lib/modules/*
+          sudo ls -l /lib/modules/$(uname -r)/kernel/net/netfilter/*
+
+          # NOTE(aznashwan): nf_conntrack should be available on the runner:
+          sudo apt update && sudo apt install -y linux-modules-$(uname -r)
+
+          # TODO(aznashwan): remove check
+          sudo ls -l /lib/modules/*
+          sudo ls -l /lib/modules/$(uname -r)/kernel/net/netfilter/*
       - name: Download snap
         uses: actions/download-artifact@v4
         with:
