@@ -20,13 +20,14 @@ func TestContainerd(t *testing.T) {
 
 	dir := t.TempDir()
 
-	g.Expect(os.WriteFile(filepath.Join(dir, "mockcni"), []byte("echo hi"), 0o600)).To(Succeed())
+	g.Expect(utils.WriteFile(filepath.Join(dir, "mockcni"), []byte("echo hi"), 0o600)).To(Succeed())
 
 	s := &mock.Snap{
 		Mock: mock.Mock{
 			ContainerdConfigDir:         filepath.Join(dir, "containerd"),
 			ContainerdRootDir:           filepath.Join(dir, "containerd-root"),
 			ContainerdSocketDir:         filepath.Join(dir, "containerd-run"),
+			ContainerdSocketPath:        filepath.Join(dir, "containerd-run", "containerd.sock"),
 			ContainerdRegistryConfigDir: filepath.Join(dir, "containerd-hosts"),
 			ContainerdStateDir:          filepath.Join(dir, "containerd-state"),
 			ContainerdExtraConfigDir:    filepath.Join(dir, "containerd-confd"),

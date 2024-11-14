@@ -185,6 +185,48 @@ def setup_k8s_snap(
         instance.exec(["/snap/k8s/current/k8s/hack/init.sh"], stdout=subprocess.DEVNULL)
 
 
+def remove_k8s_snap(instance: harness.Instance):
+    LOG.info("Uninstall k8s...")
+    stubbornly(retries=20, delay_s=5).on(instance).exec(
+        ["snap", "remove", config.SNAP_NAME, "--purge"]
+    )
+
+    LOG.info("Waiting for shims to go away...")
+    stubbornly(retries=20, delay_s=5).on(instance).until(
+        lambda p: all(
+            x not in p.stdout.decode()
+            for x in ["containerd-shim", "cilium", "coredns", "/pause"]
+        )
+    ).exec(["ps", "-fea"])
+
+    LOG.info("Waiting for kubelet and containerd mounts to go away...")
+    stubbornly(retries=20, delay_s=5).on(instance).until(
+        lambda p: all(
+            x not in p.stdout.decode()
+            for x in ["/var/lib/kubelet/pods", "/run/containerd/io.containerd"]
+        )
+    ).exec(["mount"])
+
+    # NOTE(neoaggelos): Temporarily disable this as it fails on strict.
+    # For details, `snap changes` then `snap change $remove_k8s_snap_change`.
+    # Example output follows:
+    #
+    # 2024-02-23T14:10:42Z ERROR ignoring failure in hook "remove":
+    # -----
+    # ...
+    # ip netns delete cni-UUID1
+    # Cannot remove namespace file "/run/netns/cni-UUID1": Device or resource busy
+    # ip netns delete cni-UUID2
+    # Cannot remove namespace file "/run/netns/cni-UUID2": Device or resource busy
+    # ip netns delete cni-UUID3
+    # Cannot remove namespace file "/run/netns/cni-UUID3": Device or resource busy
+
+    # LOG.info("Waiting for CNI network namespaces to go away...")
+    # stubbornly(retries=5, delay_s=5).on(instance).until(
+    #     lambda p: "cni-" not in p.stdout.decode()
+    # ).exec(["ip", "netns", "list"])
+
+
 def wait_until_k8s_ready(
     control_node: harness.Instance,
     instances: List[harness.Instance],
@@ -381,6 +423,21 @@ def tracks_least_risk(track: str, arch: str) -> str:
     return channel
 
 
+def major_minor(version: str) -> Optional[tuple]:
+    """Determine the major and minor version of a Kubernetes version string.
+
+    Args:
+        version: the version string to determine the major and minor version for
+
+    Returns:
+        a tuple containing the major and minor version or None if the version string is invalid
+    """
+    if match := TRACK_RE.match(version):
+        maj, min, _ = match.groups()
+        return int(maj), int(min)
+    return None
+
+
 def previous_track(snap_version: str) -> str:
     """Determine the snap track preceding the provided version.
 
@@ -391,12 +448,6 @@ def previous_track(snap_version: str) -> str:
         the previous track
     """
     LOG.debug("Determining previous track for %s", snap_version)
-
-    def _maj_min(version: str):
-        if match := TRACK_RE.match(version):
-            maj, min, _ = match.groups()
-            return int(maj), int(min)
-        return None
 
     if not snap_version:
         assumed = "latest"
@@ -414,20 +465,20 @@ def previous_track(snap_version: str) -> str:
         )
         return assumed
 
-    if maj_min := _maj_min(snap_version):
+    if maj_min := major_minor(snap_version):
         maj, min = maj_min
         if min == 0:
             with urllib.request.urlopen(
                 f"https://dl.k8s.io/release/stable-{maj - 1}.txt"
             ) as r:
                 stable = r.read().decode().strip()
-                maj_min = _maj_min(stable)
+                maj_min = major_minor(stable)
         else:
             maj_min = (maj, min - 1)
     elif snap_version.startswith("latest") or "/" not in snap_version:
         with urllib.request.urlopen("https://dl.k8s.io/release/stable.txt") as r:
             stable = r.read().decode().strip()
-            maj_min = _maj_min(stable)
+            maj_min = major_minor(stable)
 
     flavor_track = {"": "classic", "strict": ""}.get(config.FLAVOR, config.FLAVOR)
     track = f"{maj_min[0]}.{maj_min[1]}" + (flavor_track and f"-{flavor_track}")

@@ -108,12 +108,12 @@ func Containerd(snap snap.Snap, extraContainerdConfig map[string]any, extraArgs 
 		return fmt.Errorf("failed to render containerd config.toml: %w", err)
 	}
 
-	if err := os.WriteFile(filepath.Join(snap.ContainerdConfigDir(), "config.toml"), b, 0o600); err != nil {
+	if err := utils.WriteFile(filepath.Join(snap.ContainerdConfigDir(), "config.toml"), b, 0o600); err != nil {
 		return fmt.Errorf("failed to write config.toml: %w", err)
 	}
 
 	if _, err := snaputil.UpdateServiceArguments(snap, "containerd", map[string]string{
-		"--address": filepath.Join(snap.ContainerdSocketDir(), "containerd.sock"),
+		"--address": snap.ContainerdSocketPath(),
 		"--config":  filepath.Join(snap.ContainerdConfigDir(), "config.toml"),
 		"--root":    snap.ContainerdRootDir(),
 		"--state":   snap.ContainerdStateDir(),

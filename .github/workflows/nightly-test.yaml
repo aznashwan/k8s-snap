@@ -17,7 +17,7 @@ jobs:
         release: ["latest/edge"]
       fail-fast: false # TODO: remove once arm64 works
 
-    runs-on: ${{ matrix.arch == 'arm64' && 'Ubuntu_ARM64_4C_16G_01' || 'ubuntu-20.04' }}
+    runs-on: ${{ matrix.arch == 'arm64' && ["self-hosted", "Linux", "ARM64", "jammy", "large"] || ["self-hosted", "Linux", "AMD64", "jammy", "large"] }}
 
     steps:
       - name: Checking out repo
@@ -45,6 +45,8 @@ jobs:
           # Test the latest (up to) 6 releases for the flavour
           # TODO(ben): upgrade nightly to run all flavours
           TEST_VERSION_UPGRADE_CHANNELS: "recent 6 classic"
+          # Upgrading from 1.30 is not supported.
+          TEST_VERSION_UPGRADE_MIN_RELEASE: "1.31"
           TEST_STRICT_INTERFACE_CHANNELS: "recent 6 strict"
         run: |
           export PATH="/home/runner/.local/bin:$PATH"

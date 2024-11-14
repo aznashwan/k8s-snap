@@ -7,7 +7,7 @@ from pathlib import Path
 DIR = Path(__file__).absolute().parent
 
 # The following defaults are used to define how long to wait for a condition to be met.
-DEFAULT_WAIT_RETRIES = int(os.getenv("TEST_DEFAULT_WAIT_RETRIES") or 30)
+DEFAULT_WAIT_RETRIES = int(os.getenv("TEST_DEFAULT_WAIT_RETRIES") or 120)
 DEFAULT_WAIT_DELAY_S = int(os.getenv("TEST_DEFAULT_WAIT_DELAY_S") or 5)
 
 MANIFESTS_DIR = DIR / ".." / ".." / "templates"
@@ -119,6 +119,11 @@ JUJU_MACHINES = os.getenv("TEST_JUJU_MACHINES") or ""
 VERSION_UPGRADE_CHANNELS = (
     os.environ.get("TEST_VERSION_UPGRADE_CHANNELS", "").strip().split()
 )
+
+# The minimum Kubernetes release to upgrade from (e.g. "1.31")
+# Only relevant when using 'recent' in VERSION_UPGRADE_CHANNELS.
+VERSION_UPGRADE_MIN_RELEASE = os.environ.get("TEST_VERSION_UPGRADE_MIN_RELEASE")
+
 # A list of space-separated channels for which the strict interface tests should be run in sequential order.
 # Alternatively, use 'recent <num> strict' to get the latest <num> channels for strict.
 STRICT_INTERFACE_CHANNELS = (
